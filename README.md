@@ -190,13 +190,13 @@ This helps you:
 # Example Contribution Entry
 
 ```
-## Open Source Contributions
+# Open Source Contributions
 
-### awesome-project
+## awesome-project
 - PR: https://github.com/username/awesome-project/pull/56
 - PR: https://github.com/username/awesome-project/pull/60
 
-### another-project
+## another-project
 - PR: https://github.com/otheruser/another-project/pull/18
 ```
 
