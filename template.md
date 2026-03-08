@@ -55,10 +55,11 @@ Each contribution must include:
 Format:
 
 ```
-### Repository Name
+## Repository Name
 
-Pull Request:
-<pr-url>
+- PR: <pr-url>
+- PR: <pr-url>
+- PR: <pr-url>
 ```
 
 You can add multiple contributions under the same repository.
