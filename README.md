@@ -85,7 +85,7 @@ Click the **Fork** button on GitHub to create your own copy of this repository.
 ### 2. Clone Your Fork
 
 ```
-git clone https://github.com/YOUR-USERNAME/openiqx-members.git
+git clone https://github.com/openiqx/openiqx-members.git
 ```
 
 Move into the repository:
@@ -130,7 +130,7 @@ Fill in your details including:
 * LinkedIn
 * Open source contributions
 
-Only include **merged pull requests** if available or leave empty.
+Only include **merged pull requests** in the Open source contributions section, if available or leave empty.
 
 ---
 
@@ -138,7 +138,7 @@ Only include **merged pull requests** if available or leave empty.
 
 ```
 git add .
-git commit -m "Add profile for John Doe"
+git commit -m "Add profile for <your-fullname>"
 ```
 
 ---
@@ -193,13 +193,10 @@ This helps you:
 ## Open Source Contributions
 
 ### awesome-project
-- Issue: https://github.com/username/awesome-project/issues/42
 - PR: https://github.com/username/awesome-project/pull/56
-- Issue: https://github.com/username/awesome-project/issues/50
 - PR: https://github.com/username/awesome-project/pull/60
 
 ### another-project
-- Issue: https://github.com/otheruser/another-project/issues/12
 - PR: https://github.com/otheruser/another-project/pull/18
 ```
 
