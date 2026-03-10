@@ -1,0 +1,70 @@
+name: Auto Update Member Index
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  update-members:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate member table
+        run: |
+          INDEX_FILE="members/README.md"
+
+          # Create a temporary file for the new table
+          TABLE_FILE=$(mktemp)
+
+          # Write the table header
+          echo "| Name | GitHub | Profile |" >> $TABLE_FILE
+          echo "|------|--------|---------|" >> $TABLE_FILE
+
+          # Loop through member files and append rows
+          for file in members/*.md; do
+            if [[ "$file" == "members/example.md" || "$file" == "members/README.md" ]]; then
+              continue
+            fi
+
+            NAME=$(grep -m1 "^# Name" -A1 "$file" | tail -n1 | xargs)
+            GITHUB=$(grep -m1 "^# GitHub" -A1 "$file" | tail -n1 | xargs)
+            PROFILE=$(basename "$file")
+
+            if [[ -n "$NAME" ]]; then
+              echo "| $NAME | $GITHUB | [View Profile]($PROFILE) |" >> $TABLE_FILE
+            fi
+          done
+
+          # Sort the rows alphabetically by name (skip the header lines)
+          # Extract header, sort rows, then combine
+          head -2 $TABLE_FILE > header.txt
+          tail -n +3 $TABLE_FILE | sort >> sorted_rows.txt
+          cat header.txt sorted_rows.txt > ${TABLE_FILE}_sorted
+          mv ${TABLE_FILE}_sorted $TABLE_FILE
+
+          # Replace content between markers in the README
+          # Using awk: print everything before start marker, then new table, then after end marker
+          awk -v table="$(cat $TABLE_FILE)" '
+            /<!-- MEMBERS_TABLE_START -->/ {print; print table; skip=1; next}
+            /<!-- MEMBERS_TABLE_END -->/ {skip=0; print; next}
+            !skip
+          ' $INDEX_FILE > ${INDEX_FILE}.tmp
+
+          mv ${INDEX_FILE}.tmp $INDEX_FILE
+          rm -f $TABLE_FILE header.txt sorted_rows.txt
+
+      - name: Commit updated index
+        run: |
+          git config user.name "openiqx-bot"
+          git config user.email "actions@github.com"
+
+          git add members/README.md
+          git commit -m "Auto update member directory" || echo "No changes"
+
+          git push
