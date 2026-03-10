@@ -1,0 +1,102 @@
+name: Validate Member Profile
+
+on:
+  pull_request:
+    paths:
+      - "members/*.md"
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get changed files
+        id: files
+        run: |
+          # Use the exact base commit SHA for comparison
+          BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          FILES=$(git diff --name-only "${BASE_SHA}...HEAD" -- 'members/*.md' || true)
+          echo "files=$FILES" >> $GITHUB_OUTPUT
+
+      - name: Validate member files
+        run: |
+          for file in ${{ steps.files.outputs.files }}; do
+            # Skip template/example files
+            if [[ "$file" == "members/example.md" || "$file" == "members/README.md" ]]; then
+              continue
+            fi
+
+            echo "Validating $file"
+
+            filename=$(basename "$file")
+
+            # Enforce filename format (lowercase with hyphens, optionally digits)
+            if [[ ! "$filename" =~ ^[a-z0-9]+(-[a-z0-9]+)*\.md$ ]]; then
+              echo "❌ Invalid filename format: $filename"
+              echo "Use lowercase with hyphens (e.g., john-doe.md or john-doe-123.md)"
+              exit 1
+            fi
+
+            # Check required sections – note the use of {} to properly exit
+            grep -q "^# Name" "$file" || { echo "❌ Missing '# Name' section"; exit 1; }
+            grep -q "^# Programming Languages" "$file" || { echo "❌ Missing '# Programming Languages' section"; exit 1; }
+            grep -q "^# GitHub" "$file" || { echo "❌ Missing '# GitHub' section"; exit 1; }
+            grep -q "^# LinkedIn" "$file" || { echo "❌ Missing '# LinkedIn' section"; exit 1; }
+
+            # Extract values (assumes one-line content after header)
+            NAME=$(grep -A1 "^# Name" "$file" | tail -n1 | xargs)
+            GITHUB=$(grep -A1 "^# GitHub" "$file" | tail -n1 | xargs)
+            LINKEDIN=$(grep -A1 "^# LinkedIn" "$file" | tail -n1 | xargs)
+
+            if [[ -z "$NAME" ]]; then
+              echo "❌ Name cannot be empty"
+              exit 1
+            fi
+
+            if [[ ! "$GITHUB" =~ ^https://github\.com/ ]]; then
+              echo "❌ Invalid GitHub URL (must start with https://github.com/)"
+              exit 1
+            fi
+
+            # Basic LinkedIn URL validation – can be extended later
+            if [[ ! "$LINKEDIN" =~ ^https://(www\.)?linkedin\.com/ ]]; then
+              echo "❌ Invalid LinkedIn URL (must start with https://linkedin.com/ or https://www.linkedin.com/)"
+              exit 1
+            fi
+          done
+
+      - name: Check for duplicate GitHub profiles
+        run: |
+          # Exclude example.md and README.md from the search
+          GITHUBS=$(grep -r --include="*.md" "^https://github.com/" members \
+            | grep -v "members/example.md" | grep -v "members/README.md" \
+            | sort)
+
+          DUPES=$(echo "$GITHUBS" | uniq -d)
+
+          if [[ -n "$DUPES" ]]; then
+            echo "❌ Duplicate GitHub profiles detected:"
+            echo "$DUPES"
+            exit 1
+          fi
+
+      - name: Check for duplicate member names
+        run: |
+          # Extract names from all markdown files (excluding example/README)
+          NAMES=$(grep -r --include="*.md" -A1 "^# Name" members \
+            | grep -v "^--" | grep -v "^# Name" \
+            | grep -v "members/example.md" | grep -v "members/README.md" \
+            | sort)
+
+          DUPES=$(echo "$NAMES" | uniq -d)
+
+          if [[ -n "$DUPES" ]]; then
+            echo "❌ Duplicate member names detected:"
+            echo "$DUPES"
+            exit 1
+          fi
